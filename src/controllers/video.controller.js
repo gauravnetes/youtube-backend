@@ -1,4 +1,4 @@
-import mongoose, {isValidObjectId} from "mongoose"
+import mongoose, {isValidObjectId, set} from "mongoose"
 import {Video} from "../models/video.models.js"
 import {User} from "../models/user.models.js"
 import {ApiError} from "../utils/ApiError.js"
@@ -144,22 +144,96 @@ const publishAVideo = asyncHandler(async (req, res) => {
 const getVideoById = asyncHandler(async (req, res) => {
     const { videoId } = req.params
     //TODO: get video by id
+
+    // 1. validate the videoId
+    if (videoId && !isValidObjectId(videoId)) {
+        throw new ApiError(400, "Invalid video ID")
+    }
+
+    const video = await Video.findById(videoId)
+    if (!video) {
+        throw new ApiError(404, "Video Not Found!!")
+    }
+    return res.status(200)
+                .json(
+                    new ApiResponse(200, video, "Video found successfully")
+                )
     
 })
 
 const updateVideo = asyncHandler(async (req, res) => {
     const { videoId } = req.params
     //TODO: update video details like title, description, thumbnail
+    const {title, description, thumbnail} = req.body
+    if (videoId && !isValidObjectId(videoId)) {
+        throw new ApiError(400, "Invalid Video ID")
+    }
+
+    if (!title && !description && !thumbnail) {
+        throw new ApiError(400, "Atleast one update is required")
+    }
+
+    const updateVideoData = {};
+    if(title) updateVideoData.title = title
+    if(description) updateVideoData.description = description
+    if(thumbnail) updateVideoData.thumbnail = thumbnail
+
+    const video = await Video.findByIdAndUpdate(
+        videoId, 
+        {
+            $set: updateVideoData
+        }, {new: true, runValidators: true}
+    )
+    if (!video) {
+        throw new ApiError(500, "Video not Found")
+    }
+
+    return res.status(200)
+                .json(
+                    new ApiResponse(200, video, "Video Updated successfully")
+                )
 
 })
 
 const deleteVideo = asyncHandler(async (req, res) => {
     const { videoId } = req.params
     //TODO: delete video
+    if (videoId && !isValidObjectId(videoId)) {
+        throw new ApiError(400, "Video not found in the DB")
+    }
+
+    const video = await Video.findByIdAndDelete(videoId)
+
+    if(!video) {
+        throw new ApiError(404, "Video Not Found")
+    }
+    return res.status(200)
+                .json(
+                    new ApiResponse(200, "Video Deleted Successfully")
+                )
+
 })
 
 const togglePublishStatus = asyncHandler(async (req, res) => {
     const { videoId } = req.params
+    if (videoId && !isValidObjectId(videoId)) {
+        throw new ApiError(400, "Invalid video ID")
+    }
+
+    const video = await Video.findById(videoId)
+    if (!video) {
+        throw new ApiError(400, "Video not found in the DB")
+    }
+
+    // toggle
+    video.isPublished = !video.isPublished 
+
+    await video.save()
+
+    return res.status(200)
+                .json(
+                    new ApiResponse(200, video, "Video publish Status toggled successfully")
+                )
 })
 
 export {
