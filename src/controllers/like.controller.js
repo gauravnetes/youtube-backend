@@ -6,7 +6,7 @@ import {asyncHandler} from "../utils/asyncHandler.js"
 
 const toggleVideoLike = asyncHandler(async (req, res) => {
     const {videoId} = req.params
-    const {userId} = req.user._id
+    const userId = req.user._id
     //TODO: toggle like on video
     const existingLike = await Like.findOne({
         video: videoId, 
@@ -21,7 +21,7 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
                     )
     }
 
-    const newLike = await new Like({
+    const newLike = new Like({
         video: videoId, 
         likkedBy: userId
     })
@@ -107,6 +107,19 @@ const toggleTweetLike = asyncHandler(async (req, res) => {
 
 const getLikedVideos = asyncHandler(async (req, res) => {
     //TODO: get all liked videos
+    const userId = req.user._id
+
+    const likedVideos = await Like.find({likedBy: userId}).populate('video', 'title description thumbnail')
+
+    if (!likedVideos || likedVideos.length === 0) {
+        throw new ApiError(404, "No Liked Videos found")
+    }
+
+    const videos = likedVideos.map((like) => like.video)
+
+    return res.status(200).json(
+        new ApiResponse(200, videos, "Liked videos fetched successfully")
+    )
 })
 
 export {
