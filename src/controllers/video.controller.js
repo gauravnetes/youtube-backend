@@ -55,8 +55,8 @@ const getAllVideos = asyncHandler(async (req, res) => {
     const pipeline = [
         {$match: filter}, 
         {$sort: sortOptions}, 
-        {$skip: ((page - 1) * parseInt(limit))}, 
-        {$limit: limit}, 
+        {$skip: ((page - 1) * Number(limit))}, 
+        {$limit: Number(limit)}, 
         {
             $lookup: {
                 from: "users", 
