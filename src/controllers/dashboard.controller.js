@@ -44,6 +44,65 @@ const getChannelStats = asyncHandler(async (req, res) => {
 
 const getChannelVideos = asyncHandler(async (req, res) => {
     // TODO: Get all the videos uploaded by the channel
+    const { userId } = req.params
+    if (!userId || !isValidObjectId(userId)) {
+        throw new ApiError(400, "Invalid Channel ID")
+    }
+
+    try {
+        const channel = await User.findById(userId)
+        if (!channel) {
+            throw new ApiError(404, "Channel Not Found")
+        }
+
+        // Pagination: Get `page` and `limit` from query params, with defaults
+        let {page = 1, limit = 10} = req.query
+
+        page = parseInt(page, 10)
+        limit = parseInt(limit, 10)
+        const totalVideos = await Video.countDocuments({ owner: userId})
+
+        res.status(200).json({
+            success: true, 
+            totalVideos, 
+            page, 
+            totalPages: Math.ceil(totalVideos / limit), 
+        })
+    } catch (error) {
+        throw new ApiError(500, "Error while Fetching Channel Videos")
+    }
+
+
+
+    /*
+    example request: GET /api/channel/:userId/videos?page=2&limit=5
+    example json REsponse: 
+    {
+    "success": true,
+    "totalVideos": 50,
+    "page": 2,
+    "totalPages": 10,
+    "videos": [
+        {
+            "_id": "65ad89d87b5e1234567890",
+            "title": "React Hooks Explained",
+            "views": 1200,
+            "likes": 150,
+            "owner": "65acde3b7a1e789abcd1234",
+            "createdAt": "2024-02-15T12:00:00.000Z"
+        },
+        {
+            "_id": "65ad8baf123456789012345",
+            "title": "Next.js Authentication Guide",
+            "views": 850,
+            "likes": 90,
+            "owner": "65acde3b7a1e789abcd1234",
+            "createdAt": "2024-02-14T10:30:00.000Z"
+        }
+    ]
+}
+
+    */
 })
 
 export {
